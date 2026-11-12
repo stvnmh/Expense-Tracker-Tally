@@ -2,7 +2,7 @@
 
 Track spending, set a monthly budget, and see how you are pacing. It comes in two forms: a web app and a command-line tool.
 
-**Live demo:** https://stvnhernandez.github.io/Expense-Tracker/
+**Live demo:** https://stvnmh.github.io/Expense-Tracker/
 
 ## Web app
 
