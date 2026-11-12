@@ -1,16 +1,38 @@
 # Expense Tracker
 
-A simple way to keep an eye on your spending and stay on top of your budget.
+A simple place to see where your money goes.
 
-**Try the live demo:** [Open Expense Tracker](https://stvnmh.github.io/Expense-Tracker/)
+**Live demo:** [Open Expense Tracker](PASTE-VERCEL-URL-HERE)
 
 ## What you can do
 
-- Add and remove expenses
-- View your spending in a clear dashboard
+- View your balance, income, expenses, and monthly budget
+- See a visual spending breakdown
+- Add income or expense transactions
 - Search transactions and filter by income or expense
-- See a spending breakdown and monthly budget progress
+- Remove transactions you no longer need
 
-## Your privacy
+## How it works
 
-Your transactions are saved in your browser on your device. They aren’t shared with other users or synced between devices.
+Browser (React + Vite)
+   │
+   ▼
+Your browser's local storage
+
+Your transactions stay in the browser on the device where you entered them. There is no account or shared database, so they do not automatically sync between devices.
+
+## About this repository
+
+This repository contains the React website source code. It does not use the Python tracker or `requirements.txt`.
+
+## Tech stack
+
+React · Vite · JavaScript · CSS · Lucide icons
+
+## Run locally
+
+Install Node.js, then run:
+
+```sh
+npm install
+npm run dev
