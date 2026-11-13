@@ -2,7 +2,7 @@
 
 A simple way to see where your money goes.
 
-**Live demo:** [Open Tally](PASTE-VERCEL-URL-HERE)
+**Live demo:** [Tally](https://expense-tracker-stvnmh.vercel.app/)
 
 ## Why I made Tally
 
