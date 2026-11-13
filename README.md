@@ -6,7 +6,7 @@ A simple way to see where your money goes.
 
 ## Why I made Tally
 
-I have a habit of spending money without always noticing where it goes. I made Tally to help me track my expenses, understand my spending, and keep an eye on my budget.
+I have a bad habit of my money on random things (Valorant) I made Tally to help me track my expenses, keep an eye on my budget, etc..
 
 ## What you can do
 
