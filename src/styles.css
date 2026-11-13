@@ -44,3 +44,14 @@
 @media (hover:none),(pointer:coarse){.dropdown-trigger:active{transform:scale(.98)}.dropdown-option:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){.dropdown-trigger,.dropdown-chevron,.dropdown-option{transition:none!important}.dropdown-popover{animation:reduced-fade 140ms ease both!important}.dropdown-trigger:hover,.dropdown-option:hover,.dropdown-option.active{transform:none!important}.dropdown-trigger:before{transition:opacity 140ms ease!important;transform:none!important}}
 @media(max-width:520px){.currency-menu .dropdown-trigger{min-height:29px;padding:4px 7px 4px 6px;font-size:8px}.currency-menu .dropdown-symbol{width:18px;height:18px}.settings-dropdown .dropdown-trigger{min-width:100px}.category-filter-menu .dropdown-popover{right:auto;left:0}}
+
+/* Dropdowns use a clean solid surface instead of the glass treatment. */
+.dropdown-trigger{background:#f8fbfb;border-color:#dce5e6;box-shadow:0 2px 8px #2445480c,inset 0 1px 0 #fff}
+.dropdown-trigger:before{display:none}
+.dropdown-trigger:hover{background:#edf5f4;border-color:#cbdcdd;box-shadow:0 5px 13px #1f515012}
+.dropdown-trigger:focus-visible{box-shadow:0 0 0 4px #63bdb326}
+.currency-menu .dropdown-trigger{background:#f8fbfb;border-color:#dce5e7}
+.currency-menu .dropdown-trigger:hover{background:#edf5f4}
+.dropdown-popover{background:#fbfdfd;border-color:#e0e8e9;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 14px 34px #163b451a}
+.dark .dropdown-popover{background:#1c3035;border-color:#344b4e;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 14px 34px #0005}
+.dropdown-option-mark[style]{background:color-mix(in srgb,var(--option-color) 14%,#fff)}
