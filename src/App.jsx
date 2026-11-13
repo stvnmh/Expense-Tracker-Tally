@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowRight, BarChart3, Check, ChevronDown, CloudDownload, Coffee, Edit3, FilePlus2, Home, Moon, Plus, Search, ShoppingBag, Sun, Trash2, X, Zap, Undo2, Utensils, Car, HeartPulse, Tag } from 'lucide-react';
 
 const STORAGE_KEY = 'tally-expense-tracker-v1';
 const CATEGORIES = ['Food', 'Housing', 'Transport', 'Utilities', 'Health', 'Leisure', 'Shopping', 'Other'];
-const CURRENCIES = ['PHP', 'USD', 'EUR', 'GBP'];
+const CURRENCIES = [
+  { value: 'PHP', label: 'Philippine peso', short: 'PHP · ₱', symbol: '₱' },
+  { value: 'USD', label: 'US dollar', short: 'USD · $', symbol: '$' },
+  { value: 'EUR', label: 'Euro', short: 'EUR · €', symbol: '€' },
+  { value: 'GBP', label: 'British pound', short: 'GBP · £', symbol: '£' },
+];
 const CATEGORY_COLORS = ['#0d4b49', '#f5a63c', '#25b8a5', '#b4a1ef', '#ec9aae', '#6689d9', '#e47754', '#8b9b9b'];
 const CATEGORY_ICONS = { Food: Utensils, Housing: Home, Transport: Car, Utilities: Zap, Health: HeartPulse, Leisure: Coffee, Shopping: ShoppingBag, Other: Tag };
+const CATEGORY_OPTIONS = CATEGORIES.map((value, i) => ({ value, label: value, color: CATEGORY_COLORS[i], Icon: CATEGORY_ICONS[value] }));
+const FILTER_OPTIONS = [{ value: 'All categories', label: 'All categories', detail: 'Show every category' }, ...CATEGORY_OPTIONS];
+const THEME_OPTIONS = [{ value: 'light', label: 'Light', detail: 'Bright dashboard', Icon: Sun }, { value: 'dark', label: 'Dark', detail: 'Low-light dashboard', Icon: Moon }];
 const dateNow = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const emptyData = { name: '', currency: 'PHP', theme: 'light', budget: 0, categoryBudgets: {}, transactions: [] };
 
@@ -158,7 +166,7 @@ function App() {
     <header className="top-nav glass-tile">
       <button className="wordmark" onClick={() => navigate('Overview')} aria-label="Tally home">TALLY<span>.</span></button>
       <nav className="nav-links" aria-label="Main navigation">{nav.map(n => <button key={n} className={page === n ? 'active' : ''} onClick={() => navigate(n)}>{n}</button>)}</nav>
-      <div className="nav-tools"><label className="currency-select"><select aria-label="Currency" value={data.currency} onChange={e => updateData({ currency: e.target.value })}>{CURRENCIES.map(c => <option key={c}>{c}</option>)}</select><ChevronDown size={13}/></label><button className="round-button" onClick={() => updateData({ theme: data.theme === 'dark' ? 'light' : 'dark' })} aria-label={`Switch to ${data.theme === 'dark' ? 'light' : 'dark'} theme`}>{data.theme === 'dark' ? <Sun size={15}/> : <Moon size={15}/>}</button><button className="add-button pill-button" onClick={() => setExpenseDialog({ mode: 'add' })}><Plus size={14}/> Add expense</button></div>
+      <div className="nav-tools"><SelectMenu className="currency-menu" ariaLabel="Display currency" value={data.currency} options={CURRENCIES} onChange={currency=>updateData({currency})}/><button className="round-button" onClick={() => updateData({ theme: data.theme === 'dark' ? 'light' : 'dark' })} aria-label={`Switch to ${data.theme === 'dark' ? 'light' : 'dark'} theme`}>{data.theme === 'dark' ? <Sun size={15}/> : <Moon size={15}/>}</button><button className="add-button pill-button" onClick={() => setExpenseDialog({ mode: 'add' })}><Plus size={14}/> Add expense</button></div>
     </header>
     <main className="page-wrap">
       <div className="page-heading"><div className="kicker">{page === 'Overview' ? 'PERSONAL DASHBOARD' : page.toUpperCase()}</div><h1>{page === 'Overview' ? (data.name.trim() ? <>Welcome back <span>{data.name.trim()}</span></> : 'Welcome back') : page === 'Expenses' ? 'Your expenses' : page === 'Budget' ? 'Your budget' : 'Settings'}</h1></div>
@@ -176,11 +184,11 @@ function App() {
         </section>}
         <section className="lower-grid">
           <article className="budget-card dark-card hover-card cursor-glow" onPointerMove={setCursorGlow}><div className="panel-kicker">MONTHLY GOAL</div><h2>Your monthly budget</h2><p className="muted-on-dark">{data.budget ? 'Your spending pace this month.' : 'Set a budget to track your monthly goal.'}</p><div className="budget-ring-row"><div className="budget-ring" style={{ '--progress': `${percentUsed}%` }} tabIndex="0" aria-label={`${Math.round(percentUsed)} percent of budget used`}><div className="ring-center"><b>{data.budget ? `${Math.round(percentUsed)}%` : '—'}</b><span>{data.budget ? `${money(remaining,data.currency)} left` : 'No budget'}</span></div></div><div className="budget-numbers"><div><small>SPENT</small><b>{money(spent, data.currency)}</b></div><div><small>BUDGET</small><b>{data.budget ? money(data.budget, data.currency) : 'Not set'}</b></div></div></div><button className="edit-budget pill-button" onClick={() => setBudgetDialog(true)}>{data.budget ? 'Edit budget' : 'Set budget'}</button></article>
-          <article className="panel glass-tile activity-panel"><div className="activity-head"><div><div className="panel-kicker">YOUR ACTIVITY</div><h2>Expenses</h2></div><div className="activity-tools"><label className="filter-select"><select aria-label="Filter category" value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option>All categories</option>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select><ChevronDown size={12}/></label><button className="small-action" onClick={exportCsv} disabled={!visibleRows.length}><ArrowDownToLine size={12}/> CSV</button></div></div><TransactionTable rows={visibleRows.slice(0, 5)} currency={data.currency} onEdit={t=>setExpenseDialog({ mode: 'edit', transaction: t })} onDelete={t=>deleteOne(t.id)} emptyText="No expenses yet. Add one to get started."/><button className="view-all" onClick={()=>navigate('Expenses')}>View all expenses <ArrowRight size={13}/></button></article>
+          <article className="panel glass-tile activity-panel"><div className="activity-head"><div><div className="panel-kicker">YOUR ACTIVITY</div><h2>Expenses</h2></div><div className="activity-tools"><SelectMenu className="category-filter-menu" ariaLabel="Filter expenses by category" value={categoryFilter} options={FILTER_OPTIONS} onChange={setCategoryFilter}/><button className="small-action" onClick={exportCsv} disabled={!visibleRows.length}><ArrowDownToLine size={12}/> CSV</button></div></div><TransactionTable rows={visibleRows.slice(0, 5)} currency={data.currency} onEdit={t=>setExpenseDialog({ mode: 'edit', transaction: t })} onDelete={t=>deleteOne(t.id)} emptyText="No expenses yet. Add one to get started."/><button className="view-all" onClick={()=>navigate('Expenses')}>View all expenses <ArrowRight size={13}/></button></article>
         </section>
       </>}
 
-      {page === 'Expenses' && <section className="panel glass-tile full-panel"><div className="full-panel-head"><div><div className="panel-kicker">YOUR ACTIVITY</div><h2>Expenses</h2><p>Find, review, or update your recorded expenses.</p></div><button className="add-button pill-button" onClick={()=>setExpenseDialog({mode:'add'})}><Plus size={14}/> Add expense</button></div><div className="expense-filters"><label className="search-input"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search expenses"/></label><label className="filter-select"><select aria-label="Filter category" value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option>All categories</option>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select><ChevronDown size={12}/></label><button className="small-action" onClick={exportCsv} disabled={!visibleRows.length}><ArrowDownToLine size={13}/> Export CSV</button></div><TransactionTable rows={visibleRows} currency={data.currency} onEdit={t=>setExpenseDialog({mode:'edit',transaction:t})} onDelete={t=>deleteOne(t.id)} emptyText={search || categoryFilter!=='All categories' ? 'No expenses match those filters.' : 'Your expense list is empty. Add an expense or load sample data from Settings.'}/></section>}
+      {page === 'Expenses' && <section className="panel glass-tile full-panel"><div className="full-panel-head"><div><div className="panel-kicker">YOUR ACTIVITY</div><h2>Expenses</h2><p>Find, review, or update your recorded expenses.</p></div><button className="add-button pill-button" onClick={()=>setExpenseDialog({mode:'add'})}><Plus size={14}/> Add expense</button></div><div className="expense-filters"><label className="search-input"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search expenses"/></label><SelectMenu className="category-filter-menu" ariaLabel="Filter expenses by category" value={categoryFilter} options={FILTER_OPTIONS} onChange={setCategoryFilter}/><button className="small-action" onClick={exportCsv} disabled={!visibleRows.length}><ArrowDownToLine size={13}/> Export CSV</button></div><TransactionTable rows={visibleRows} currency={data.currency} onEdit={t=>setExpenseDialog({mode:'edit',transaction:t})} onDelete={t=>deleteOne(t.id)} emptyText={search || categoryFilter!=='All categories' ? 'No expenses match those filters.' : 'Your expense list is empty. Add an expense or load sample data from Settings.'}/></section>}
 
       {page === 'Budget' && <section className="budget-page-grid"><article className="budget-card dark-card hover-card cursor-glow" onPointerMove={setCursorGlow}><div className="panel-kicker">MONTHLY GOAL</div><h2>Your monthly budget</h2><p className="muted-on-dark">{data.budget ? `${monthLabel(now)} spending progress` : 'Set a monthly limit to see your progress here.'}</p><div className="big-budget-ring budget-ring" style={{ '--progress': `${percentUsed}%` }} tabIndex="0"><div className="ring-center"><b>{data.budget ? `${Math.round(percentUsed)}%` : '—'}</b><span>{data.budget ? `${money(remaining,data.currency)} left` : 'No budget yet'}</span></div></div><div className="budget-breakdown"><div><small>SPENT</small><b>{money(spent,data.currency)}</b></div><div><small>MONTHLY BUDGET</small><b>{data.budget ? money(data.budget,data.currency) : 'Not set'}</b></div><div><small>DAILY AVERAGE</small><b>{money(dailyAverage,data.currency)}</b></div></div><button className="edit-budget pill-button" onClick={()=>setBudgetDialog(true)}>{data.budget?'Edit budget':'Set a budget'}</button></article><article className="panel glass-tile full-panel"><div className="panel-kicker">CATEGORY LIMITS</div><h2>Keep an eye on each category</h2><p className="panel-description">Optional limits help you spot where your money is going.</p><div className="category-budgets">{CATEGORIES.map((category,i)=>{const amount=monthRows.filter(t=>t.category===category).reduce((sum,t)=>sum+t.amount,0);const limit=Number(data.categoryBudgets[category]||0);return <div className="category-budget-row" key={category}><i style={{background:CATEGORY_COLORS[i]}}/><span>{category}</span><b>{money(amount,data.currency)}</b><small>{limit ? `of ${money(limit,data.currency)}` : 'No limit'}</small><button aria-label={`Set ${category} limit`} onClick={()=>{const value=window.prompt(`Monthly limit for ${category} (${data.currency}). Enter 0 to remove it.`,String(limit||''));if(value===null)return;const n=Number(value);if(!Number.isFinite(n)||n<0)return;updateData({categoryBudgets:{...data.categoryBudgets,[category]:n}})}}><Edit3 size={14}/></button></div>})}</div></article></section>}
 
@@ -199,6 +207,86 @@ function App() {
 function ChartSwitch({ value, onChange }) {
   const options=['Line','Pie','Both','Off'];
   return <div className="chart-switch" role="group" aria-label="Choose charts" style={{'--switch-index':options.indexOf(value)}}>{options.map(item=><button key={item} className={value===item?'selected':''} aria-pressed={value===item} onClick={()=>onChange(item)}>{item}</button>)}</div>;
+}
+
+function SelectMenu({ value, options, onChange, ariaLabel, className = '' }) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const uid = useId();
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const optionRefs = useRef([]);
+  const selectedIndex = Math.max(0, options.findIndex(option => option.value === value));
+  const selected = options[selectedIndex] || options[0];
+  const listId = `select-list-${uid}`;
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutside = event => { if (!rootRef.current?.contains(event.target)) setOpen(false); };
+    document.addEventListener('pointerdown', closeOnOutside);
+    return () => document.removeEventListener('pointerdown', closeOnOutside);
+  }, [open]);
+
+  function focusOption(index) {
+    const next = (index + options.length) % options.length;
+    setActiveIndex(next);
+    optionRefs.current[next]?.focus();
+  }
+  function openAt(index = selectedIndex) {
+    setActiveIndex(index);
+    setOpen(true);
+    requestAnimationFrame(() => optionRefs.current[index]?.focus());
+  }
+  function closeMenu(returnFocus = false) {
+    setOpen(false);
+    if (returnFocus) requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+  function handleTriggerKeyDown(event) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
+      event.preventDefault();
+      if (open) focusOption(selectedIndex);
+      else openAt(event.key === 'ArrowUp' ? options.length - 1 : selectedIndex);
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault(); closeMenu(true);
+    }
+  }
+  function handleOptionKeyDown(event, index) {
+    if (event.key === 'ArrowDown') { event.preventDefault(); focusOption(index + 1); }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); focusOption(index - 1); }
+    else if (event.key === 'Home') { event.preventDefault(); focusOption(0); }
+    else if (event.key === 'End') { event.preventDefault(); focusOption(options.length - 1); }
+    else if (event.key === 'Escape') { event.preventDefault(); closeMenu(true); }
+    else if (event.key === 'Tab') closeMenu(false);
+  }
+  function choose(option) {
+    onChange(option.value);
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  const SelectedIcon = selected?.Icon;
+  return <div className={`select-menu ${className} ${open ? 'is-open' : ''}`} ref={rootRef}>
+    <button ref={triggerRef} type="button" className="dropdown-trigger" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} onClick={() => open ? closeMenu(false) : openAt()} onKeyDown={handleTriggerKeyDown}>
+      <span className="dropdown-trigger-content">
+        {selected?.symbol && <span className="dropdown-symbol">{selected.symbol}</span>}
+        {SelectedIcon && <SelectedIcon size={14} className="dropdown-current-icon"/>}
+        {selected?.color && <i className="dropdown-color-dot" style={{ background: selected.color }}/>}
+        <span>{selected?.short || selected?.label}</span>
+      </span>
+      <ChevronDown size={13} className="dropdown-chevron"/>
+    </button>
+    {open && <div id={listId} className="dropdown-popover" role="listbox" aria-label={ariaLabel} onKeyDown={event=>{if(event.target===event.currentTarget&&event.key==='Escape'){event.preventDefault();closeMenu(true);}}}>
+      {options.map((option, index) => {
+        const Icon = option.Icon;
+        return <button key={option.value} ref={element=>optionRefs.current[index]=element} type="button" role="option" aria-selected={option.value===value} tabIndex={-1} className={`dropdown-option ${option.value===value?'selected':''} ${index===activeIndex?'active':''}`} onFocus={()=>setActiveIndex(index)} onPointerEnter={()=>setActiveIndex(index)} onKeyDown={event=>handleOptionKeyDown(event,index)} onClick={()=>choose(option)}>
+          <span className="dropdown-option-mark" style={option.color?{'--option-color':option.color}:undefined}>{Icon ? <Icon size={15}/> : option.color ? <i/> : option.symbol ? <b>{option.symbol}</b> : null}</span>
+          <span className="dropdown-option-copy"><span className="dropdown-option-name">{option.label}</span>{(option.detail || (option.value!==option.label && !option.symbol)) && <small>{option.detail || option.value}</small>}</span>
+          {option.symbol && <span className="dropdown-option-code">{option.value}</span>}
+          {option.value===value && <Check size={14} className="dropdown-check"/>}
+        </button>;
+      })}
+    </div>}
+  </div>;
 }
 
 function PieChart({ parts, currency }) {
@@ -220,7 +308,7 @@ function ExpenseDialog({ mode, transaction, onClose, onSave }) {
   const [category,setCategory]=useState(transaction?.category||'Food');
   const [error,setError]=useState('');
   function submit(event){event.preventDefault();if(!Number.isFinite(Number(amount))||Number(amount)<=0){setError('Enter an amount greater than 0.');return;}if(!date){setError('Choose a date for this expense.');return;}onSave({description:description||category,amount,date,category});}
-  return <div className="modal-scrim" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><form className="dialog-panel" onSubmit={submit}><div className="dialog-head"><div><div className="panel-kicker">EXPENSE DETAILS</div><h2>{mode==='edit'?'Edit expense':'Add an expense'}</h2></div><button type="button" className="icon-close" aria-label="Close" onClick={onClose}><X size={17}/></button></div><label className="form-label">Description <input autoFocus value={description} onChange={e=>setDescription(e.target.value)} placeholder="Describe this expense"/></label><div className="form-row"><label className="form-label">Amount<input type="number" inputMode="decimal" min="0.01" step="0.01" required value={amount} onChange={e=>setAmount(e.target.value)} placeholder="Enter an amount"/></label><label className="form-label">Date<input type="date" required value={date} onChange={e=>setDate(e.target.value)}/></label></div><label className="form-label">Category<select value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></label>{error&&<p className="form-error" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="cancel-button" onClick={onClose}>Cancel</button><button className="add-button pill-button" type="submit">{mode==='edit'?'Save changes':'Add expense'}</button></div></form></div>;
+  return <div className="modal-scrim" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><form className="dialog-panel" onSubmit={submit}><div className="dialog-head"><div><div className="panel-kicker">EXPENSE DETAILS</div><h2>{mode==='edit'?'Edit expense':'Add an expense'}</h2></div><button type="button" className="icon-close" aria-label="Close" onClick={onClose}><X size={17}/></button></div><label className="form-label">Description <input autoFocus value={description} onChange={e=>setDescription(e.target.value)} placeholder="Describe this expense"/></label><div className="form-row"><label className="form-label">Amount<input type="number" inputMode="decimal" min="0.01" step="0.01" required value={amount} onChange={e=>setAmount(e.target.value)} placeholder="Enter an amount"/></label><label className="form-label">Date<input type="date" required value={date} onChange={e=>setDate(e.target.value)}/></label></div><div className="form-label"><span>Category</span><SelectMenu className="category-choice-menu" ariaLabel="Expense category" value={category} options={CATEGORY_OPTIONS} onChange={setCategory}/></div>{error&&<p className="form-error" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="cancel-button" onClick={onClose}>Cancel</button><button className="add-button pill-button" type="submit">{mode==='edit'?'Save changes':'Add expense'}</button></div></form></div>;
 }
 
 function BudgetDialog({ budget, currency, onClose, onSave }) {
@@ -233,7 +321,22 @@ function BudgetDialog({ budget, currency, onClose, onSave }) {
 function SettingsPage({ data, updateData, exportAll, loadSampleData, clearAll }) {
   const [name,setName]=useState(data.name);
   useEffect(()=>setName(data.name),[data.name]);
-  return <section className="settings-grid"><article className="panel glass-tile full-panel"><div className="panel-kicker">MAKE TALLY YOURS</div><h2>Settings</h2><p className="panel-description">Choose how Tally looks and what it calls you.</p><label className="form-label settings-label">Your name<input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your name"/></label><button className="add-button pill-button" onClick={()=>updateData({name:name.trim()})}><Check size={14}/> Save name</button><div className="settings-separator"/><label className="settings-choice"><span><b>Currency format</b><small>Changes the display format only. No conversion is applied.</small></span><select value={data.currency} onChange={e=>updateData({currency:e.target.value})}>{CURRENCIES.map(c=><option key={c}>{c}</option>)}</select></label><label className="settings-choice"><span><b>Appearance</b><small>Choose a light or dark dashboard.</small></span><select value={data.theme} onChange={e=>updateData({theme:e.target.value})}><option value="light">Light</option><option value="dark">Dark</option></select></label></article><article className="panel glass-tile full-panel"><div className="panel-kicker">YOUR DATA</div><h2>Take your data with you</h2><p className="panel-description">Tally saves information in this browser. Export a backup before clearing browser data or switching devices.</p><button className="wide-action" onClick={exportAll}><CloudDownload size={16}/><span><b>Export all data</b><small>Download a JSON backup of your settings, budget, and expenses.</small></span><ArrowRight size={15}/></button><button className="wide-action" onClick={loadSampleData}><FilePlus2 size={16}/><span><b>Load sample data</b><small>Add example entries only when you choose to click this.</small></span><ArrowRight size={15}/></button><button className="wide-action danger-action" onClick={clearAll}><Trash2 size={16}/><span><b>Clear all data</b><small>You'll be asked to confirm; you can undo for 5 seconds.</small></span><ArrowRight size={15}/></button></article></section>;
+  return <section className="settings-grid">
+    <article className="panel glass-tile full-panel">
+      <div className="panel-kicker">MAKE TALLY YOURS</div><h2>Settings</h2><p className="panel-description">Choose how Tally looks and what it calls you.</p>
+      <label className="form-label settings-label">Your name<input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your name"/></label>
+      <button className="add-button pill-button" onClick={()=>updateData({name:name.trim()})}><Check size={14}/> Save name</button>
+      <div className="settings-separator"/>
+      <div className="settings-choice"><span><b>Currency format</b><small>Changes the display format only. No conversion is applied.</small></span><SelectMenu className="settings-dropdown" ariaLabel="Display currency" value={data.currency} options={CURRENCIES} onChange={currency=>updateData({currency})}/></div>
+      <div className="settings-choice"><span><b>Appearance</b><small>Choose a light or dark dashboard.</small></span><SelectMenu className="settings-dropdown theme-dropdown" ariaLabel="Appearance" value={data.theme} options={THEME_OPTIONS} onChange={theme=>updateData({theme})}/></div>
+    </article>
+    <article className="panel glass-tile full-panel">
+      <div className="panel-kicker">YOUR DATA</div><h2>Take your data with you</h2><p className="panel-description">Tally saves information in this browser. Export a backup before clearing browser data or switching devices.</p>
+      <button className="wide-action" onClick={exportAll}><CloudDownload size={16}/><span><b>Export all data</b><small>Download a JSON backup of your settings, budget, and expenses.</small></span><ArrowRight size={15}/></button>
+      <button className="wide-action" onClick={loadSampleData}><FilePlus2 size={16}/><span><b>Load sample data</b><small>Add example entries only when you choose to click this.</small></span><ArrowRight size={15}/></button>
+      <button className="wide-action danger-action" onClick={clearAll}><Trash2 size={16}/><span><b>Clear all data</b><small>You'll be asked to confirm; you can undo for 5 seconds.</small></span><ArrowRight size={15}/></button>
+    </article>
+  </section>;
 }
 
 export default App;
